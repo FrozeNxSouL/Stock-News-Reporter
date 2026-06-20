@@ -12,8 +12,12 @@ function getStoredAccessToken() {
   }
 }
 
+// In dev, make direct calls to the backend URL (CORS-enabled).
+// In production, use relative path /api so nginx handles the proxy.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -78,7 +82,7 @@ api.interceptors.response.use(
         try {
           const tokens = JSON.parse(localStorage.getItem(TOKEN_KEY) || '{}')
           if (tokens.refresh) {
-            const { data } = await axios.post('/api/auth/refresh', {
+            const { data } = await axios.post(`${API_BASE}/auth/refresh`, {
               refresh_token: tokens.refresh,
             })
 

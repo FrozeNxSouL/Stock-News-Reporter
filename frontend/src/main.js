@@ -3,7 +3,8 @@ import { createPinia } from 'pinia'
 import VueApexCharts from 'vue3-apexcharts'
 import router from './router/index.js'
 import App from './App.vue'
-import './assets/theme.css'
+import './assets/main.css'
+import './assets/component.css'
 
 // Restore dark mode preference before mount (avoids flash)
 const saved = localStorage.getItem('theme')
