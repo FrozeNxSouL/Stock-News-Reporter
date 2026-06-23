@@ -62,15 +62,6 @@ async def root():
     }
 
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "database": "connected" if Database.client else "disconnected",
-    }
-
-
 def main():
     """Run the application."""
     uvicorn.run(

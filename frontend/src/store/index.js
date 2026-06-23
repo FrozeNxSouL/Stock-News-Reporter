@@ -4,11 +4,9 @@ import { useAuthStore } from './auth.js'
 
 export const useStockStore = defineStore('stock', {
   state: () => ({
-    tickers: [],
-    selectedTickers: [],
     news: [],
-    analyses: {},
     stockPrices: {},
+    _priceTimestamps: {},   // ticker → ISO timestamp of last fetch
     sentimentSummary: {},
     overviews: {},
     loading: false,
@@ -18,69 +16,27 @@ export const useStockStore = defineStore('stock', {
   }),
 
   getters: {
-    getTickerBySymbol: (state) => (symbol) => {
-      return state.tickers.find(t => t.symbol === symbol)
-    },
     getStockPrice: (state) => (symbol) => {
       return state.stockPrices[symbol] || null
     },
+
     getOverview: (state) => (symbol) => {
       return state.overviews[symbol] || null
     },
   },
 
   actions: {
-    // ---- Tickers ----
-    async fetchTickers() {
-      this.loading = true
-      try {
-        const response = await api.get('/tickers/')
-        this.tickers = response.data
-        // Sync selected tickers with user watchlist if authenticated
-        const authStore = useAuthStore()
-        if (authStore.isAuthenticated && authStore.watchlist.length > 0) {
-          this.selectedTickers = authStore.watchlist
-        } else {
-          this.selectedTickers = this.tickers.filter(t => t.active).map(t => t.symbol)
-        }
-      } catch (err) {
-        this.error = err.response?.data?.detail || 'Failed to fetch tickers'
-        console.error('Fetch tickers error:', err)
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async addTicker(symbol) {
-      try {
-        const response = await api.post('/tickers/', { symbol })
-        this.tickers.push(response.data)
-        return response.data
-      } catch (err) {
-        this.error = err.response?.data?.detail || 'Failed to add ticker'
-        throw err
-      }
-    },
-
-    async removeTicker(symbol) {
-      try {
-        await api.delete(`/tickers/${symbol}`)
-        this.tickers = this.tickers.filter(t => t.symbol !== symbol)
-        delete this.stockPrices[symbol]
-        delete this.overviews[symbol]
-      } catch (err) {
-        this.error = err.response?.data?.detail || 'Failed to remove ticker'
-        throw err
-      }
-    },
-
-    async addDefaultTickers() {
-      try {
-        await api.post('/tickers/defaults')
-        await this.fetchTickers()
-      } catch (err) {
-        this.error = err.response?.data?.detail || 'Failed to add defaults'
-      }
+    /** Reset ALL state — called on logout */
+    clearAll() {
+      this.news = []
+      this.stockPrices = {}
+      this._priceTimestamps = {}
+      this.sentimentSummary = {}
+      this.overviews = {}
+      this.loading = false
+      this.newsLoading = false
+      this.error = null
+      this.stopAutoRefresh()
     },
 
     // ---- News ----
@@ -99,25 +55,24 @@ export const useStockStore = defineStore('stock', {
       }
     },
 
-    async triggerFetch() {
-      try {
-        const response = await api.get('/news/fetch')
-        return response.data
-      } catch (err) {
-        this.error = err.response?.data?.detail || 'Failed to trigger fetch'
-        throw err
-      }
-    },
-
     // ---- Stock Prices ----
-    async fetchStockPrice(ticker) {
+    async fetchStockPrice(ticker, forceRefresh = false) {
+      // Return cached data if < 5 min old (unless forced)
+      const cacheAge = this._priceTimestamps[ticker]
+        ? Date.now() - new Date(this._priceTimestamps[ticker]).getTime()
+        : Infinity
+      if (!forceRefresh && cacheAge < 300_000 && this.stockPrices[ticker]) {
+        return this.stockPrices[ticker]
+      }
+
       try {
         const response = await api.get(`/stocks/${ticker}`)
         this.stockPrices[ticker] = response.data
+        this._priceTimestamps[ticker] = new Date().toISOString()
         return response.data
       } catch (err) {
         console.error(`Fetch price error for ${ticker}:`, err)
-        return null
+        return this.stockPrices[ticker] || null
       }
     },
 
@@ -128,8 +83,10 @@ export const useStockStore = defineStore('stock', {
           params: { tickers: tickers.join(',') }
         })
         const prices = response.data.prices || []
+        const now = new Date().toISOString()
         prices.forEach(p => {
           this.stockPrices[p.ticker] = p
+          this._priceTimestamps[p.ticker] = now
         })
         return prices
       } catch (err) {
@@ -165,11 +122,33 @@ export const useStockStore = defineStore('stock', {
       }
     },
 
+    // ---- Ticker Search / Lookup ----
+    async searchTickers(query) {
+      if (!query || query.trim().length < 1) return []
+      try {
+        const response = await api.get('/stocks/search', { params: { q: query } })
+        return response.data.results || []
+      } catch (err) {
+        console.error('Search tickers error:', err)
+        return []
+      }
+    },
+
+    async lookupTicker(ticker) {
+      try {
+        const response = await api.get(`/stocks/lookup/${ticker}`)
+        return response.data
+      } catch {
+        return null
+      }
+    },
+
     // ---- Auto refresh ----
     startAutoRefresh(intervalMs = 60000) {
       this.stopAutoRefresh()
       this.refreshInterval = setInterval(async () => {
-        const active = this.selectedTickers
+        const authStore = useAuthStore()
+        const active = authStore.isAuthenticated ? authStore.watchlist : []
         if (active.length > 0) {
           await this.fetchMultiplePrices(active)
         }

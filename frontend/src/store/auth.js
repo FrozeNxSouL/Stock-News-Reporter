@@ -1,6 +1,16 @@
 import { defineStore } from 'pinia'
 import api from '../services/api.js'
 
+// Dynamic import to avoid circular dependency — resolved at call time
+let _stockStore = null
+function getStockStore() {
+  if (!_stockStore) {
+    const { useStockStore } = require('./index.js')  // eslint-disable-line
+    _stockStore = useStockStore
+  }
+  return _stockStore()
+}
+
 const TOKEN_KEY = 'auth_tokens'
 const USER_KEY = 'auth_user'
 
@@ -29,23 +39,26 @@ export const useAuthStore = defineStore('auth', {
     refreshToken: null,
     loading: false,
     error: null,
+    initialized: false,   // true once init() has completed (success or not)
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.accessToken && !!state.user,
     watchlist: (state) => state.user?.watchlist || [],
+    pinnedTickers: (state) => state.user?.pinned || [],
   },
 
   actions: {
     /** Initialize from persisted tokens (called on app mount) */
-    init() {
+    async init() {
       const tokens = loadTokens()
       if (tokens?.access) {
         this.accessToken = tokens.access
         this.refreshToken = tokens.refresh
         // Fetch user profile to validate token
-        return this.fetchProfile()
+        await this.fetchProfile()
       }
+      this.initialized = true
     },
 
     /** Sign up a new user */
@@ -93,7 +106,10 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.accessToken = null
       this.refreshToken = null
+      this.initialized = false
       clearTokens()
+      // Clear stock store data
+      try { getStockStore().clearAll() } catch { /* ok */ }
     },
 
     /** Fetch authenticated user profile */
@@ -151,13 +167,33 @@ export const useAuthStore = defineStore('auth', {
     async toggleWatchlistTicker(symbol) {
       if (!this.user) return
       const current = [...(this.user.watchlist || [])]
-      const idx = current.indexOf(symbol.toUpperCase())
+      const pinned = [...(this.user.pinned || [])]
+      const sym = symbol.toUpperCase()
+      const idx = current.indexOf(sym)
       if (idx >= 0) {
         current.splice(idx, 1)
+        // Also remove from pinned if present
+        const pidx = pinned.indexOf(sym)
+        if (pidx >= 0) pinned.splice(pidx, 1)
+        await this.updateProfile({ watchlist: current, pinned })
       } else {
-        current.push(symbol.toUpperCase())
+        current.push(sym)
+        await this.updateProfile({ watchlist: current })
       }
-      await this.updateProfile({ watchlist: current })
+    },
+
+    /** Toggle a ticker's pinned (high-priority) status */
+    async togglePinned(symbol) {
+      if (!this.user) return
+      const pinned = [...(this.user.pinned || [])]
+      const sym = symbol.toUpperCase()
+      const idx = pinned.indexOf(sym)
+      if (idx >= 0) {
+        pinned.splice(idx, 1)
+      } else {
+        pinned.push(sym)
+      }
+      await this.updateProfile({ pinned })
     },
 
     /** Check if a ticker is in user watchlist */

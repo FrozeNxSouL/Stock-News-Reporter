@@ -91,9 +91,6 @@
 
         <!-- Action buttons (SELL / BUY style) -->
         <div class="hero-actions">
-          <button class="btn btn-secondary hero-btn" id="btn-fetch-news" @click="triggerFetch">
-            ⟳ Refresh
-          </button>
           <button class="btn btn-primary hero-btn" id="btn-goto-news" @click="$router.push('/news')">
             📰 All News
           </button>
@@ -107,10 +104,10 @@
 
         <!-- Chart -->
         <section v-if="price?.historical?.length" class="detail-section glass-card" aria-label="Price chart">
-          <h2 class="detail-section-title">📈 Price History (1 Month)</h2>
+          <h2 class="detail-section-title">Price History (1 Month)</h2>
           <div class="chart-container">
             <apexchart
-              type="candlestick"
+              type="area"
               :options="chartOptions"
               :series="chartSeries"
               height="320"
@@ -246,7 +243,7 @@
         <div v-else class="state-container glass-card" style="padding: 40px 24px;">
           <span class="state-icon">📭</span>
           <p class="state-text">No recent news found for {{ tickerSymbol }}</p>
-          <button class="btn btn-secondary" @click="triggerFetch" id="btn-trigger-fetch">Fetch News Now</button>
+
         </div>
       </template>
 
@@ -284,10 +281,10 @@
 
       <!-- History tab -->
       <div v-if="activeTab === 'history'" class="detail-section glass-card">
-        <h2 class="detail-section-title">🕐 Price History</h2>
+        <h2 class="detail-section-title">Price History</h2>
         <div class="chart-container" v-if="price?.historical?.length">
           <apexchart
-            type="candlestick"
+            type="area"
             :options="chartOptions"
             :series="chartSeries"
             height="400"
@@ -340,31 +337,44 @@ async function loadData() {
   }
 }
 
-async function triggerFetch() {
-  loading.value = true
-  try {
-    await store.triggerFetch()
-    await loadData()
-  } finally {
-    loading.value = false
-  }
-}
-
 onMounted(loadData)
 
 // Detect dark mode for chart
 const isDark = computed(() => document.documentElement.classList.contains('dark'))
 
+// Chart color: bullish green if last close > first close, else bearish red
+const chartColor = computed(() => {
+  const hist = price.value?.historical
+  if (!hist || hist.length < 2) return '#6366f1'
+  return hist[hist.length - 1].close >= hist[0].close
+    ? '#2D7A3A'
+    : '#B53230'
+})
+
 const chartOptions = computed(() => ({
   chart: {
-    type: 'candlestick',
+    type: 'line',
     height: 320,
     background: 'transparent',
     toolbar: { show: false },
     fontFamily: 'Outfit, sans-serif',
+    zoom: { enabled: false },
   },
   theme: {
     mode: isDark.value ? 'dark' : 'light',
+  },
+  stroke: {
+    curve: 'smooth',
+    width: 2.5,
+    colors: [chartColor.value],
+  },
+  colors: [chartColor.value],
+  dataLabels: { enabled: false },
+  markers: {
+    size: 0,
+    strokeColors: chartColor.value,
+    strokeWidth: 2,
+    hover: { size: 5 },
   },
   xaxis: {
     type: 'datetime',
@@ -373,37 +383,33 @@ const chartOptions = computed(() => ({
     axisTicks: { color: 'var(--border)' },
   },
   yaxis: {
-    tooltip: { enabled: true },
     labels: {
       style: { colors: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', fontSize: '11px' },
       formatter: (val) => `$${val.toFixed(2)}`,
     },
   },
-  plotOptions: {
-    candlestick: {
-      colors: {
-        upward: '#2D7A3A',
-        downward: '#B53230',
-      },
-      wick: { useFillColor: true },
-    },
-  },
   grid: {
     borderColor: 'var(--border)',
     strokeDashArray: 3,
+    padding: { top: 10, bottom: 0 },
   },
   tooltip: {
     theme: isDark.value ? 'dark' : 'light',
     style: { fontFamily: 'Outfit, sans-serif' },
+    x: { format: 'dd MMM yyyy' },
+    y: {
+      formatter: (val) => `$${val.toFixed(2)}`,
+    },
   },
 }))
 
 const chartSeries = computed(() => {
   if (!price.value?.historical?.length) return []
   return [{
+    name: price.value.ticker,
     data: price.value.historical.map(p => ({
       x: new Date(p.timestamp).getTime(),
-      y: [p.open, p.high, p.low, p.close],
+      y: p.close,
     }))
   }]
 })

@@ -42,7 +42,8 @@ class RefreshRequest(BaseModel):
 class UserProfileUpdate(BaseModel):
     """Fields the user can update on their profile."""
     username: Optional[str] = Field(None, min_length=3, max_length=30)
-    watchlist: Optional[List[str]] = None  # list of ticker symbols to track
+    watchlist: Optional[List[str]] = None   # all tracked ticker symbols
+    pinned: Optional[List[str]] = None      # high-priority subset of watchlist
 
     @field_validator("username")
     @classmethod
@@ -61,6 +62,7 @@ class UserInDB(BaseModel):
     username: str
     hashed_password: str
     watchlist: List[str] = []
+    pinned: List[str] = []
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -76,6 +78,7 @@ class UserResponse(BaseModel):
     email: str
     username: str
     watchlist: List[str] = []
+    pinned: List[str] = []
     created_at: datetime
     updated_at: datetime
 

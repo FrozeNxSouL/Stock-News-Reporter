@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from database import Database
 from models.ticker import TickerCreate, TickerUpdate, TickerResponse
+from scripts.stock_fetcher import lookup_ticker_info
 from config import settings
 
 router = APIRouter(prefix="/api/tickers", tags=["Tickers"])
@@ -46,6 +47,13 @@ async def create_ticker(ticker: TickerCreate):
     doc["symbol"] = doc["symbol"].upper()
     doc["created_at"] = datetime.now(timezone.utc)
     doc["updated_at"] = datetime.now(timezone.utc)
+
+    # Auto-fill name/sector from Yahoo Finance if not provided
+    if not doc.get("name") and not doc.get("sector"):
+        info = await lookup_ticker_info(doc["symbol"])
+        if info:
+            doc["name"] = info.get("name", "")
+            doc["sector"] = info.get("sector", "")
 
     result = await db.insert_one(doc)
     doc["_id"] = str(result.inserted_id)

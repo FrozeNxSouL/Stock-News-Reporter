@@ -15,7 +15,7 @@
 
       <Transition name="fade">
         <div v-if="authStore.error" class="auth-error" role="alert">
-          ⚠️ {{ authStore.error }}
+          {{ authStore.error }}
         </div>
       </Transition>
 

@@ -698,6 +698,13 @@ html.dark .badge-ticker {
   min-width: 185px;
   padding: 6px;
   z-index: 300;
+  background: rgba(30, 30, 30, 0.92);
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+}
+
+html:not(.dark) .user-dropdown {
+  background: rgba(250, 246, 236, 0.92);
 }
 
 .dropdown-item {

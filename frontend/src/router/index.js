@@ -6,6 +6,7 @@ import Settings from '../components/Settings.vue'
 import Login from '../components/auth/Login.vue'
 import Signup from '../components/auth/Signup.vue'
 import UserProfile from '../components/auth/UserProfile.vue'
+import Watchlist from '../components/Watchlist.vue'
 
 const routes = [
   {
@@ -45,6 +46,12 @@ const routes = [
     path: '/profile',
     name: 'UserProfile',
     component: UserProfile,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/watchlist',
+    name: 'Watchlist',
+    component: Watchlist,
     meta: { requiresAuth: true },
   },
 ]

@@ -71,6 +71,7 @@ async def signup(body: UserSignup):
         "username": body.username,
         "hashed_password": hashed,
         "watchlist": [],
+        "pinned": [],
         "is_active": True,
         "created_at": now,
         "updated_at": now,
@@ -228,6 +229,7 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         email=current_user["email"],
         username=current_user["username"],
         watchlist=current_user.get("watchlist", []),
+        pinned=current_user.get("pinned", []),
         created_at=current_user["created_at"],
         updated_at=current_user["updated_at"],
     )
@@ -262,6 +264,11 @@ async def update_profile(
         # Normalize tickers to uppercase
         update_set["watchlist"] = [t.upper().strip() for t in body.watchlist if t.strip()]
 
+    if body.pinned is not None:
+        # Only keep pinned tickers that exist in user's watchlist
+        current_wl = update_set.get("watchlist") or current_user.get("watchlist", [])
+        update_set["pinned"] = [t.upper().strip() for t in body.pinned if t.strip().upper() in current_wl]
+
     if update_set:
         update_set["updated_at"] = datetime.now(timezone.utc)
         updates["$set"] = update_set
@@ -279,6 +286,7 @@ async def update_profile(
         email=user["email"],
         username=user.get("username", current_user.get("username", "")),
         watchlist=user.get("watchlist", []),
+        pinned=user.get("pinned", []),
         created_at=user["created_at"],
         updated_at=user.get("updated_at", datetime.now(timezone.utc)),
     )

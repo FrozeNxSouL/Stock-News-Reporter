@@ -14,11 +14,8 @@
         <div class="feed-actions">
           <select v-model="filterTicker" class="form-input feed-select" @change="loadNews" id="filter-ticker-select" aria-label="Filter by ticker">
             <option value="">All Tickers</option>
-            <option v-for="t in store.tickers" :key="t.symbol" :value="t.symbol">{{ t.symbol }}</option>
+            <option v-for="t in authStore.watchlist" :key="t" :value="t">{{ t }}</option>
           </select>
-          <button class="btn btn-primary" @click="fetchNewNews" :disabled="fetching" id="btn-fetch-latest">
-            {{ fetching ? '⟳ Fetching…' : '⟳ Fetch Latest' }}
-          </button>
         </div>
       </div>
 
@@ -115,7 +112,7 @@
     <div v-else class="state-container">
       <span class="state-icon">📭</span>
       <p class="state-text">ไม่พบบทความข่าว</p>
-      <button class="btn btn-primary" @click="fetchNewNews" id="btn-fetch-empty">Fetch News Now</button>
+
     </div>
 
     <!-- ═══ PAGINATION ═══ -->
@@ -140,14 +137,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStockStore } from '../store/index.js'
+import { useAuthStore } from '../store/auth.js'
 
 const store = useStockStore()
+const authStore = useAuthStore()
 
 const items = ref([])
 const loading = ref(false)
-const fetching = ref(false)
 const error = ref(null)
 const currentPage = ref(1)
 const totalItems = ref(0)
@@ -194,25 +192,12 @@ async function loadNews() {
   }
 }
 
-async function fetchNewNews() {
-  fetching.value = true
-  try {
-    const result = await store.triggerFetch()
-    if (result) await loadNews()
-  } catch {
-    error.value = 'Failed to fetch news'
-  } finally {
-    fetching.value = false
-  }
-}
-
 function changePage(page) {
   currentPage.value = page
   loadNews()
 }
 
 onMounted(async () => {
-  await store.fetchTickers()
   loadNews()
 })
 

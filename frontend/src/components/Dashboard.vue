@@ -13,31 +13,30 @@
       </div>
 
       <!-- Ticker bubbles row -->
-      <div class="ticker-bubbles" v-if="store.tickers.length > 0">
+      <div class="ticker-bubbles" v-if="selectedTickers.length > 0">
         <button
-          v-for="ticker in store.tickers.slice(0, 8)"
-          :key="ticker.symbol"
+          v-for="ticker in selectedTickers.slice(0, 8)"
+          :key="ticker"
           class="ticker-bubble"
-          :class="{ active: selectedTickers.includes(ticker.symbol) }"
-          @click="toggleTicker(ticker.symbol)"
-          :id="`ticker-bubble-${ticker.symbol}`"
-          :title="ticker.name || ticker.symbol"
+          :class="{ active: true }"
+          @click="$router.push(`/ticker/${ticker}`)"
+          :id="`ticker-bubble-${ticker}`"
+          :title="ticker"
         >
-          <span class="bubble-symbol">{{ ticker.symbol }}</span>
+          <span v-if="authStore.pinnedTickers.includes(ticker)" class="bubble-pin-dot"></span>
+          <span class="bubble-symbol">{{ ticker }}</span>
         </button>
-        <button
-          v-if="store.tickers.length === 0"
-          class="btn btn-primary"
-          @click="addDefaults"
-          id="btn-load-defaults"
-        >📥 Load Tickers</button>
+      </div>
+
+      <div v-else class="ticker-bubbles-empty">
+        <p class="empty-hint">
+          <template v-if="authStore.isAuthenticated">Your watchlist is empty. Go to Watchlist to add tickers.</template>
+          <template v-else>Sign in to start tracking tickers.</template>
+        </p>
       </div>
 
       <!-- Hero actions -->
       <div class="hero-actions">
-        <button v-if="store.tickers.length === 0" class="btn btn-primary" @click="addDefaults" id="btn-load-defaults-main">
-          📥 Load Default Tickers
-        </button>
         <button class="btn btn-secondary" @click="refreshAll" :disabled="loading" id="btn-refresh">
           {{ loading ? '⟳ Refreshing…' : '⟳ Refresh All' }}
         </button>
@@ -45,16 +44,15 @@
     </div>
 
     <!-- ═══ LOADING STATE ═══ -->
-    <div v-if="store.loading && store.tickers.length === 0" class="state-container">
+    <div v-if="store.loading && selectedTickers.length === 0" class="state-container">
       <div class="spinner"></div>
       <p class="state-text">Brewing market data…</p>
     </div>
 
     <!-- ═══ ERROR STATE ═══ -->
-    <div v-if="store.error && store.tickers.length === 0" class="state-container">
+    <div v-if="store.error" class="state-container">
       <span class="state-icon">⚠️</span>
       <p class="state-text">{{ store.error }}</p>
-      <button class="btn btn-primary" @click="store.fetchTickers()" id="btn-retry">Retry</button>
     </div>
 
     <!-- ═══ STOCK PRICE CARDS ═══ -->
@@ -65,7 +63,7 @@
           v-for="ticker in selectedTickers"
           :key="ticker"
           class="price-card"
-          :class="getPriceClass(ticker)"
+          :class="[getPriceClass(ticker), { 'pinned-card': authStore.pinnedTickers.includes(ticker) }]"
           @click="$router.push(`/ticker/${ticker}`)"
           :id="`price-card-${ticker}`"
           role="button"
@@ -75,9 +73,30 @@
         >
           <!-- Gradient background bubble -->
           <div class="card-bg-orb"></div>
+          <div v-if="authStore.pinnedTickers.includes(ticker)" class="pinned-badge">PINNED</div>
+
+          <!-- ═══ LOADING SKELETON ═══ -->
+          <template v-if="!getPrice(ticker)">
+            <div class="card-skeleton-header">
+              <span class="card-symbol">{{ ticker }}</span>
+            </div>
+            <div class="skeleton-line skeleton-price"></div>
+            <div class="skeleton-row">
+              <div class="skeleton-line skeleton-stat"></div>
+              <div class="skeleton-line skeleton-stat"></div>
+              <div class="skeleton-line skeleton-stat"></div>
+            </div>
+            <div class="skeleton-line skeleton-chart"></div>
+          </template>
+
+          <!-- ═══ LIVE DATA ═══ -->
+          <template v-else>
 
           <div class="card-header">
-            <span class="card-symbol">{{ ticker }}</span>
+            <span class="card-symbol">
+              <span v-if="authStore.pinnedTickers.includes(ticker)" class="card-pin-dot"></span>
+              {{ ticker }}
+            </span>
             <span v-if="getPrice(ticker)?.change_percent !== undefined" class="card-change" :class="getPriceClass(ticker)">
               {{ getPrice(ticker)?.change_percent > 0 ? '▲' : getPrice(ticker)?.change_percent < 0 ? '▼' : '─' }}
               {{ Math.abs(getPrice(ticker)?.change_percent || 0).toFixed(2) }}%
@@ -106,35 +125,31 @@
           <!-- Mini sparkline -->
           <div class="card-sparkline" v-if="getPrice(ticker)?.historical?.length">
             <svg viewBox="0 0 100 36" preserveAspectRatio="none" class="sparkline-svg">
-              <defs>
-                <linearGradient :id="`spark-grad-${ticker}`" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" :stop-color="getPriceColor(getPrice(ticker))" stop-opacity="0.35"/>
-                  <stop offset="100%" :stop-color="getPriceColor(getPrice(ticker))" stop-opacity="0"/>
-                </linearGradient>
-              </defs>
               <path
                 :d="sparklinePath(getPrice(ticker))"
-                :fill="`url(#spark-grad-${ticker})`"
+                fill="none"
                 :stroke="getPriceColor(getPrice(ticker))"
-                stroke-width="1.5"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               />
             </svg>
           </div>
+        </template>
         </article>
       </div>
     </section>
 
-    <!-- ═══ EMPTY TICKER STATE ═══ -->
-    <div v-if="store.tickers.length > 0 && selectedTickers.length === 0" class="state-container">
-      <span class="state-icon">👆</span>
-      <p class="state-text">Select tickers above to view their stock data</p>
-      <p style="font-size:13px; color: var(--text-muted);">Click on any ticker bubble to add it to your watchlist</p>
+    <!-- ═══ EMPTY STATE ═══ -->
+    <div v-if="authStore.isAuthenticated && selectedTickers.length === 0 && !store.loading" class="state-container">
+      <p class="state-text">No tickers in your watchlist</p>
+      <router-link to="/watchlist" class="btn btn-primary" style="margin-top:12px">Go to Watchlist →</router-link>
     </div>
 
     <!-- ═══ RECENT NEWS ═══ -->
     <section v-if="recentNews.length > 0" class="news-section" aria-label="Recent news">
       <div class="section-header-row">
-        <h2 class="section-title">📰 Recent News</h2>
+        <h2 class="section-title">Recent News</h2>
         <router-link to="/news" class="view-all-link" id="link-view-all-news">View All →</router-link>
       </div>
       <div class="news-grid">
@@ -173,22 +188,25 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useStockStore } from '../store/index.js'
 import { useAuthStore } from '../store/auth.js'
 
 const store = useStockStore()
 const authStore = useAuthStore()
-const selectedTickers = ref([])
 const loading = ref(false)
 
+// ─── selectedTickers: pinned first, then rest; properly reactive ───
+const selectedTickers = computed(() => {
+  if (!authStore.isAuthenticated) return []
+  const wl = authStore.watchlist
+  const pinned = authStore.pinnedTickers
+  const rest = wl.filter(t => !pinned.includes(t))
+  return [...pinned, ...rest]
+})
+
 onMounted(async () => {
-  await store.fetchTickers()
-  if (store.selectedTickers.length > 0) {
-    selectedTickers.value = [...store.selectedTickers]
-    await refreshPrices()
-  } else if (store.tickers.length > 0) {
-    selectedTickers.value = store.tickers.slice(0, 6).map(t => t.symbol)
+  if (selectedTickers.value.length > 0) {
     await refreshPrices()
   }
   await store.fetchNews({ page_size: 8 })
@@ -199,24 +217,9 @@ onUnmounted(() => {
   store.stopAutoRefresh()
 })
 
-watch(selectedTickers, (newVal) => {
-  if (authStore.isAuthenticated) {
-    authStore.updateProfile({ watchlist: [...newVal] }).catch(() => {})
-  }
-}, { deep: true })
-
-async function addDefaults() {
-  await store.addDefaultTickers()
-  if (store.tickers.length > 0) {
-    selectedTickers.value = store.tickers.slice(0, 6).map(t => t.symbol)
-    await refreshPrices()
-  }
-}
-
 async function refreshAll() {
   loading.value = true
   await Promise.all([
-    store.fetchTickers(),
     refreshPrices(),
     store.fetchNews({ page_size: 8 }),
   ])
@@ -224,18 +227,9 @@ async function refreshAll() {
 }
 
 async function refreshPrices() {
-  if (selectedTickers.value.length > 0) {
-    await store.fetchMultiplePrices(selectedTickers.value)
-  }
-}
-
-function toggleTicker(symbol) {
-  const idx = selectedTickers.value.indexOf(symbol)
-  if (idx >= 0) {
-    selectedTickers.value.splice(idx, 1)
-  } else {
-    selectedTickers.value.push(symbol)
-    store.fetchStockPrice(symbol)
+  const tickers = selectedTickers.value
+  if (tickers.length > 0) {
+    await store.fetchMultiplePrices(tickers)
   }
 }
 
@@ -269,11 +263,7 @@ function sparklinePath(price) {
     const y = h - ((c - min) / range) * (h - 4) - 2
     return `${x},${y}`
   })
-  // Build area path
-  const linePoints = pts.join(' L ')
-  const firstX = 0
-  const lastX = w
-  return `M ${pts[0]} L ${linePoints} L ${lastX},${h} L ${firstX},${h} Z`
+  return `M ${pts[0]} L ${pts.slice(1).join(' L ')}`
 }
 
 function formatVolume(vol) {
@@ -287,10 +277,10 @@ function formatVolume(vol) {
 const recentNews = computed(() => store.news.slice(0, 6))
 
 function getRelevantTicker(article) {
-  for (const t of selectedTickers.value) {
+  for (const t of selectedTickers) {
     if (article.tickers?.includes(t)) return t
   }
-  return article.tickers?.[0] || 'AAPL'
+  return selectedTickers[0] || article.tickers?.[0] || 'SPY'
 }
 
 function timeAgo(dateStr) {

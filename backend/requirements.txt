@@ -24,7 +24,7 @@ lxml==5.3.0
 playwright==1.49.1
 
 # Stock data
-yfinance==0.2.52
+yfinance==0.2.54
 
 # NLP / Sentiment (lightweight)
 textblob==0.18.0

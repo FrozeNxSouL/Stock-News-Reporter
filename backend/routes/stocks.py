@@ -1,22 +1,73 @@
 """
 API routes for stock price data.
 """
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from typing import List, Optional
 from datetime import datetime, timezone
 from database import Database
 from models.analysis import StockPriceResponse, StockPricePoint
-from scripts.stock_fetcher import fetch_current_price, fetch_multiple_prices
+from scripts.stock_fetcher import (
+    fetch_current_price,
+    fetch_multiple_prices,
+    search_tickers,
+    lookup_ticker_info,
+)
 from config import settings
 
 router = APIRouter(prefix="/api/stocks", tags=["Stocks"])
 
 
+# ── Explicit routes MUST come before /{ticker} wildcard ──────────
+
+@router.get("/search")
+async def search_stocks(q: str = Query(..., min_length=1, description="Search query"),):
+    """
+    Search for tickers by symbol or company name.
+    Returns matching tickers with symbol, name, exchange, and sector.
+    """
+    results = await search_tickers(q)
+    return {"results": results}
+
+
+@router.get("/lookup/{ticker}")
+async def lookup_ticker(ticker: str):
+    """
+    Look up a single ticker to verify it exists and get its info.
+    Returns symbol, name, exchange, sector.
+    """
+    info = await lookup_ticker_info(ticker)
+    if not info:
+        raise HTTPException(status_code=404, detail=f"Ticker '{ticker}' not found")
+    return info
+
+
+@router.get("/")
+async def get_multiple_prices(
+    tickers: str = Query(..., description="Comma-separated list of tickers"),
+):
+    """
+    Get stock prices for multiple tickers at once.
+    """
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    prices = await fetch_multiple_prices(ticker_list)
+
+    db = Database.stock_prices
+    for price in prices:
+        if price.current_price > 0:
+            doc = price.model_dump()
+            doc["timestamp"] = datetime.now(timezone.utc)
+            await db.insert_one(doc)
+
+    return {"prices": [p.model_dump() for p in prices]}
+
+
+# ── Wildcard: /{ticker} MUST be last ─────────────────────────────
+
 @router.get("/{ticker}", response_model=StockPriceResponse)
 async def get_stock_price(ticker: str):
     """
     Get current stock price and historical data for a ticker.
-    Fetches live data from yfinance.
+    Fetches live data from yfinance with a direct API fallback.
     """
     ticker = ticker.upper()
     price_data = await fetch_current_price(ticker)
@@ -49,24 +100,3 @@ async def get_stock_price(ticker: str):
             await db.delete_one({"_id": old["_id"]})
 
     return price_data
-
-
-@router.get("/")
-async def get_multiple_prices(
-    tickers: str = Query(..., description="Comma-separated list of tickers"),
-):
-    """
-    Get stock prices for multiple tickers at once.
-    """
-    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
-    prices = await fetch_multiple_prices(ticker_list)
-
-    # Cache in MongoDB
-    db = Database.stock_prices
-    for price in prices:
-        if price.current_price > 0:
-            doc = price.model_dump()
-            doc["timestamp"] = datetime.now(timezone.utc)
-            await db.insert_one(doc)
-
-    return {"prices": [p.model_dump() for p in prices]}
