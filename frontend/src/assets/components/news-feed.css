@@ -1,0 +1,261 @@
+/* ================================================
+   NEWS FEED
+   ================================================ */
+.news-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ---- Feed header ---- */
+.news-feed .feed-header {
+  padding: 20px 24px 0;
+  overflow: hidden;
+}
+
+.news-feed .feed-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.news-feed .feed-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.news-feed .feed-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.news-feed .feed-ticker-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+.news-feed .feed-count {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.news-feed .feed-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.news-feed .feed-select {
+  width: auto;
+  padding: 7px 12px;
+  font-size: 13px;
+  min-width: 140px;
+}
+
+/* Tab bar */
+.news-feed .tab-bar {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  margin: 0 -24px;
+  padding: 0 24px;
+}
+
+.news-feed .tab-btn {
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: var(--trans-fast);
+  white-space: nowrap;
+}
+
+.news-feed .tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.news-feed .tab-btn.active {
+  color: var(--brand-caramel);
+  border-bottom-color: var(--brand-caramel);
+  font-weight: 700;
+}
+
+/* News list card */
+.news-feed .news-list {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* News item */
+.news-feed .news-item {
+  padding: 0;
+}
+
+.news-feed .ni-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 22px;
+  transition: background 0.15s;
+}
+
+.news-feed .ni-row:hover {
+  background: var(--nav-active-bg);
+}
+
+.news-feed .ni-avatar {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 38px;
+  height: 38px;
+  font-size: 15px;
+}
+
+.news-feed .ni-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.news-feed .ni-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+
+.news-feed .ni-time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.news-feed .ni-dot {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.news-feed .ni-source {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.news-feed .ni-type-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  margin-left: 2px;
+}
+
+.news-feed .ni-type-badge.rss {
+  background: rgba(160, 98, 42, 0.14);
+  color: var(--brand-caramel);
+}
+
+.news-feed .ni-type-badge.scrape {
+  background: rgba(107, 63, 200, 0.12);
+  color: #8B5CF6;
+}
+
+.news-feed .ni-title-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.news-feed .ni-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.45;
+  margin-bottom: 8px;
+  transition: color 0.18s;
+}
+
+.news-feed .ni-title-link:hover .ni-title {
+  color: var(--brand-caramel);
+}
+
+.news-feed .ni-tickers {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Pagination */
+.news-feed .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.news-feed .page-btn {
+  min-width: 90px;
+}
+
+.news-feed .page-info {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* News feed responsive */
+@media (max-width: 600px) {
+  .news-feed {
+    gap: 12px;
+  }
+
+  .news-feed .feed-header {
+    padding: 16px 16px 0;
+  }
+
+  .news-feed .tab-bar {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .news-feed .tab-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .news-feed .ni-row {
+    padding: 14px 16px;
+  }
+
+  .news-feed .feed-header-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .news-feed .feed-actions {
+    width: 100%;
+  }
+
+  .news-feed .feed-select {
+    flex: 1;
+  }
+}
+
+

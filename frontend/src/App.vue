@@ -87,15 +87,15 @@
     <nav class="mobile-nav" aria-label="Mobile navigation">
       <router-link to="/" class="mobile-nav-item" exact-active-class="active" id="mobile-nav-dashboard">
         <span class="mobile-nav-icon">▦</span>
-        <span class="mobile-nav-label">Market</span>
+        <span class="mobile-nav-label">MARKET</span>
       </router-link>
       <router-link to="/news" class="mobile-nav-item" active-class="active" id="mobile-nav-news">
         <span class="mobile-nav-icon">☰</span>
-        <span class="mobile-nav-label">News</span>
+        <span class="mobile-nav-label">NEWS</span>
       </router-link>
-      <router-link to="/settings" class="mobile-nav-item" active-class="active" id="mobile-nav-settings">
-        <span class="mobile-nav-icon">◎</span>
-        <span class="mobile-nav-label">Settings</span>
+      <router-link v-if="authStore.isAuthenticated" to="/watchlist" class="mobile-nav-item" active-class="active" id="mobile-nav-watchlist">
+        <span class="mobile-nav-icon">◉</span>
+        <span class="mobile-nav-label">PORTFOLIO</span>
       </router-link>
       <router-link
         v-if="authStore.isAuthenticated"
@@ -105,11 +105,11 @@
         id="mobile-nav-profile"
       >
         <span class="mobile-nav-icon">◎</span>
-        <span class="mobile-nav-label">Profile</span>
+        <span class="mobile-nav-label">PROFILE</span>
       </router-link>
       <router-link v-else to="/login" class="mobile-nav-item" active-class="active" id="mobile-nav-login">
         <span class="mobile-nav-icon">◎</span>
-        <span class="mobile-nav-label">Sign In</span>
+        <span class="mobile-nav-label">SIGN IN</span>
       </router-link>
     </nav>
   </div>

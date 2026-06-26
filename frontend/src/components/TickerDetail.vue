@@ -1,10 +1,13 @@
 <template>
   <div class="ticker-detail">
 
-    <!-- ═══ BACK BUTTON ═══ -->
-    <button class="back-btn" @click="$router.push('/')" id="btn-back">
-      ← Back to Dashboard
-    </button>
+    <!-- ═══ TOP BAR: Back + Status ═══ -->
+    <div class="ticker-top-bar">
+      <button class="back-btn" @click="$router.push('/')" id="btn-back" title="Back to Dashboard">
+        ←
+      </button>
+      <span v-if="isInWatchlist" class="added-badge">ADDED</span>
+    </div>
 
     <!-- ═══ LOADING ═══ -->
     <div v-if="loading" class="state-container">
@@ -22,12 +25,12 @@
     <!-- ═══ MAIN CONTENT ═══ -->
     <template v-else>
 
-      <!-- Hero Header (Picture 2 middle style) -->
+      <!-- Hero Card -->
       <div class="ticker-hero glass-card">
         <div class="hero-bg-orb hero-bg-orb-1"></div>
         <div class="hero-bg-orb hero-bg-orb-2"></div>
 
-        <!-- Tab bar -->
+        <!-- Tab bar — pill style -->
         <div class="ticker-tabs" role="tablist">
           <button
             class="ticker-tab"
@@ -52,23 +55,47 @@
           >History</button>
         </div>
 
-        <!-- Ticker name + price -->
+        <!-- Inline chart in hero -->
+        <div class="hero-chart" v-if="price?.historical?.length">
+          <svg viewBox="0 0 800 140" preserveAspectRatio="none" class="hero-chart-svg">
+            <defs>
+              <linearGradient :id="`hero-chart-grad-${tickerSymbol}`" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" :stop-color="chartColor" stop-opacity="0.25" />
+                <stop offset="100%" :stop-color="chartColor" stop-opacity="0.02" />
+              </linearGradient>
+            </defs>
+            <path
+              :d="heroChartArea"
+              :fill="`url(#hero-chart-grad-${tickerSymbol})`"
+            />
+            <path
+              :d="heroChartLine"
+              fill="none"
+              :stroke="chartColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <!-- Ticker name + price display (centered) -->
         <div class="hero-main">
           <h1 class="hero-ticker">{{ tickerSymbol }}</h1>
-          <div class="hero-price-row">
+          <div class="hero-price-display">
             <span class="hero-price" v-if="price">${{ price.current_price?.toFixed(2) }}</span>
             <span class="hero-price" v-else>—</span>
-            <span
-              v-if="price"
-              class="hero-change badge"
-              :class="price.change_percent >= 0 ? 'badge-up' : 'badge-down'"
-            >
-              {{ price.change_percent >= 0 ? '▲' : '▼' }}
-              ${{ Math.abs(price.change || 0).toFixed(2) }}
-              ({{ price.change_percent >= 0 ? '+' : '' }}{{ (price.change_percent || 0).toFixed(2) }}%)
-            </span>
+            <div class="hero-change-row" v-if="price">
+              <span
+                class="hero-change badge"
+                :class="price.change_percent >= 0 ? 'badge-up' : 'badge-down'"
+              >
+                {{ price.change_percent >= 0 ? '+' : '' }}${{ Math.abs(price.change || 0).toFixed(2) }}
+                ({{ price.change_percent >= 0 ? '+' : '' }}{{ (price.change_percent || 0).toFixed(2) }}%)
+              </span>
+            </div>
+            <p class="hero-sub">TODAY</p>
           </div>
-          <p class="hero-sub">TODAY</p>
         </div>
 
         <!-- Price stats row -->
@@ -89,10 +116,13 @@
           </div>
         </div>
 
-        <!-- Action buttons (SELL / BUY style) -->
+        <!-- Action buttons — dual pill style -->
         <div class="hero-actions">
           <button class="btn btn-primary hero-btn" id="btn-goto-news" @click="$router.push('/news')">
             📰 All News
+          </button>
+          <button class="hero-btn-outline" id="btn-goto-watchlist" @click="$router.push('/watchlist')">
+            📊 Watchlist
           </button>
         </div>
       </div>
@@ -102,7 +132,7 @@
       <!-- Overview -->
       <template v-if="activeTab === 'overview'">
 
-        <!-- Chart -->
+        <!-- Chart (existing) -->
         <section v-if="price?.historical?.length" class="detail-section glass-card" aria-label="Price chart">
           <h2 class="detail-section-title">Price History (1 Month)</h2>
           <div class="chart-container">
@@ -160,7 +190,7 @@
           </div>
         </section>
 
-        <!-- Related News — Article detail style (Picture 3) -->
+        <!-- Related News — Article detail style -->
         <section v-if="overview?.recent_news?.length" class="detail-section" aria-label="Related news">
           <div class="section-header-row">
             <h2 class="detail-section-title" style="margin-bottom:0">📰 Related News</h2>
@@ -174,7 +204,7 @@
               class="news-article glass-card"
               :id="`article-${article.id}`"
             >
-              <!-- Article header (Picture 3 style) -->
+              <!-- Article header -->
               <div class="article-top">
                 <div class="article-meta-row">
                   <span class="article-date">{{ formatDate(article.published) }}</span>
@@ -184,7 +214,7 @@
                   </div>
                 </div>
 
-                <!-- Ticker badge (Picture 3 style) -->
+                <!-- Ticker badge -->
                 <div class="article-ticker-row" v-if="article.tickers?.length">
                   <span
                     v-for="t in article.tickers.slice(0, 3)"
@@ -200,7 +230,7 @@
                   </span>
                 </div>
 
-                <!-- Article title (Picture 3 — large bold) -->
+                <!-- Article title -->
                 <a :href="article.url" target="_blank" rel="noopener" class="article-title-link" :id="`art-link-${article.id}`">
                   <h3 class="article-title">{{ article.title }}</h3>
                 </a>
@@ -243,7 +273,6 @@
         <div v-else class="state-container glass-card" style="padding: 40px 24px;">
           <span class="state-icon">📭</span>
           <p class="state-text">No recent news found for {{ tickerSymbol }}</p>
-
         </div>
       </template>
 
@@ -303,10 +332,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStockStore } from '../store/index.js'
+import { useAuthStore } from '../store/auth.js'
 
 const props = defineProps({ symbol: String })
 const route = useRoute()
 const store = useStockStore()
+const authStore = useAuthStore()
 
 const tickerSymbol = computed(() => props.symbol || route.params.symbol)
 const loading = ref(true)
@@ -316,6 +347,57 @@ const activeTab = ref('overview')
 const price = ref(null)
 const overview = ref(null)
 const sentiment = ref(null)
+
+// Check if ticker is in watchlist
+const isInWatchlist = computed(() => {
+  return authStore.isAuthenticated && authStore.watchlist.includes(tickerSymbol.value)
+})
+
+// Detect dark mode for chart
+const isDark = computed(() => document.documentElement.classList.contains('dark'))
+
+// Chart color: bullish green if last close > first close, else bearish red
+const chartColor = computed(() => {
+  const hist = price.value?.historical
+  if (!hist || hist.length < 2) return '#5ee085'
+  return hist[hist.length - 1].close >= hist[0].close
+    ? '#5ee085'
+    : '#ff6b6b'
+})
+
+// ─── Inline hero chart SVG paths ───
+const heroChartLine = computed(() => buildHeroChartPath(false))
+const heroChartArea = computed(() => buildHeroChartPath(true))
+
+function buildHeroChartPath(area) {
+  const hist = price.value?.historical
+  if (!hist || hist.length < 2) return ''
+  const closes = hist.map(p => p.close)
+  const min = Math.min(...closes)
+  const max = Math.max(...closes)
+  const range = (max - min) || 1
+  const w = 800
+  const h = 140
+  const padX = 10
+  const padY = 12
+  const pts = closes.map((c, i) => {
+    const x = padX + (i / (closes.length - 1)) * (w - 2 * padX)
+    const y = h - padY - ((c - min) / range) * (h - 2 * padY)
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  })
+
+  let d = `M ${pts[0]}`
+  for (let i = 1; i < pts.length; i++) {
+    d += ` L ${pts[i]}`
+  }
+
+  if (area) {
+    const lastX = pts[pts.length - 1].split(',')[0]
+    d += ` L ${lastX},${h} L ${pts[0].split(',')[0]},${h} Z`
+  }
+
+  return d
+}
 
 async function loadData() {
   loading.value = true
@@ -338,18 +420,6 @@ async function loadData() {
 }
 
 onMounted(loadData)
-
-// Detect dark mode for chart
-const isDark = computed(() => document.documentElement.classList.contains('dark'))
-
-// Chart color: bullish green if last close > first close, else bearish red
-const chartColor = computed(() => {
-  const hist = price.value?.historical
-  if (!hist || hist.length < 2) return '#6366f1'
-  return hist[hist.length - 1].close >= hist[0].close
-    ? '#2D7A3A'
-    : '#B53230'
-})
 
 const chartOptions = computed(() => ({
   chart: {
@@ -429,19 +499,6 @@ function formatDate(dateStr) {
     hour: '2-digit', minute: '2-digit',
     timeZoneName: 'short',
   })
-}
-
-function timeAgo(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diffMs = now - date
-  const diffMins = Math.floor(diffMs / 60000)
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  const diffHours = Math.floor(diffMins / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
-  return `${Math.floor(diffHours / 24)}d ago`
 }
 
 function truncate(text, maxLen) {

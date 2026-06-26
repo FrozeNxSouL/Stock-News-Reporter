@@ -1,0 +1,236 @@
+/* ================================================
+   USER PROFILE
+   ================================================ */
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.profile-page > h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-card,
+.watchlist-card,
+.danger-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--glass-shadow);
+  padding: 26px 28px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-page .avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-caramel), var(--brand-espresso));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #FAF4EA;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(107, 63, 31, 0.30);
+}
+
+.profile-info h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-email {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.profile-joined {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  opacity: 0.7;
+}
+
+/* Auth messages in profile */
+.profile-page .auth-error {
+  background: var(--down-bg);
+  border: 1px solid rgba(181, 50, 48, 0.30);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  font-size: 13px;
+  color: var(--down-color);
+  margin-bottom: 16px;
+}
+
+.profile-page .auth-success {
+  background: var(--up-bg);
+  border: 1px solid rgba(45, 122, 58, 0.30);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  font-size: 13px;
+  color: var(--up-color);
+  margin-bottom: 16px;
+}
+
+/* Profile form */
+.profile-page .profile-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.profile-page .form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.profile-page .form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-page .form-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--r-sm);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: 'Outfit', sans-serif;
+  transition: var(--trans-fast);
+  outline: none;
+}
+
+.profile-page .form-input:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px rgba(160, 98, 42, 0.15);
+}
+
+.profile-page .ticker-input {
+  text-transform: uppercase;
+  font-family: 'DM Mono', monospace;
+}
+
+/* Watchlist */
+.watchlist-card h3,
+.danger-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.section-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.profile-page .add-ticker-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.profile-page .watchlist-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-page .watchlist-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 5px 5px 5px 14px;
+  transition: var(--trans-fast);
+}
+
+.profile-page .watchlist-pill:hover {
+  border-color: var(--brand-caramel);
+}
+
+.profile-page .pill-link {
+  color: var(--brand-caramel);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+}
+
+.profile-page .pill-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 50%;
+  transition: var(--trans-fast);
+}
+
+.profile-page .pill-remove:hover {
+  color: var(--down-color);
+  background: var(--down-bg);
+}
+
+.profile-page .empty-watchlist {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.profile-page .hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+/* Danger zone */
+.profile-page .btn-danger {
+  color: var(--down-color);
+  border-color: rgba(181, 50, 48, 0.30);
+}
+
+.profile-page .btn-danger:hover {
+  background: var(--down-bg);
+  border-color: var(--down-color);
+}
